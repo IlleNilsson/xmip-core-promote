@@ -4,7 +4,8 @@ use xmip_context::{ContextValue, MessageContext};
 use xmip_contract::{ContractError, StructuredValue, StructureReader};
 use xmip_path::{Path, PathEngine};
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+// Not Eq. ContextValue carries Decimal(f64), and f64 has no total equality.
+#[derive(Clone, Debug, PartialEq)]
 pub struct DefaultPromotion {
     pub key: String,
     pub value: ContextValue,
