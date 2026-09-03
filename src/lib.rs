@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 
 use xmip_context::{ContextValue, MessageContext};
-use xmip_contract::{ContractError, StructuredValue, StructureReader};
+use xmip_contract::{ContractError, StructureReader, StructuredValue};
 use xmip_path::{Path, PathEngine};
 
 // Not Eq. ContextValue carries Decimal(f64), and f64 has no total equality.
@@ -17,8 +17,13 @@ pub struct PathPromotion {
     pub context_key: String,
 }
 
-pub fn apply_default(context: MessageContext, values: impl IntoIterator<Item = DefaultPromotion>) -> MessageContext {
-    values.into_iter().fold(context, |current, item| current.with_value(item.key, item.value))
+pub fn apply_default(
+    context: MessageContext,
+    values: impl IntoIterator<Item = DefaultPromotion>,
+) -> MessageContext {
+    values.into_iter().fold(context, |current, item| {
+        current.with_value(item.key, item.value)
+    })
 }
 
 pub fn apply_path(
