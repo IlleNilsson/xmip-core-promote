@@ -1,8 +1,8 @@
 #![forbid(unsafe_code)]
 
-use xmip_context::{ContextValue, MessageContext};
-use xmip_contract::{ContractError, StructureReader, StructuredValue};
-use xmip_path::{Path, PathEngine};
+use context::{ContextValue, MessageContext};
+use contract::{ContractError, StructureReader, StructuredValue};
+use path::{Path, PathEngine};
 
 // Not Eq. ContextValue carries Decimal(f64), and f64 has no total equality.
 #[derive(Clone, Debug, PartialEq)]
