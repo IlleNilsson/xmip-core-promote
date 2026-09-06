@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 
 use context::{ContextValue, MessageContext};
-use contract::{ContractError, StructureReader, StructuredValue};
+use contract::{ContractError, StructureReader};
 use path::{Path, PathEngine};
 
 // Not Eq. ContextValue carries Decimal(f64), and f64 has no total equality.
@@ -36,20 +36,12 @@ pub fn apply_path(
 
     for promotion in promotions {
         if let Some(value) = engine.read(reader, &promotion.path)? {
-            result = result.with_value(promotion.context_key.clone(), convert(value));
+            // A structured field and a promoted property are one type now
+            // (core::ScalarValue), so a read value drops straight in — no
+            // conversion, because there is nothing to convert between.
+            result = result.with_value(promotion.context_key.clone(), value);
         }
     }
 
     Ok(result)
-}
-
-fn convert(value: StructuredValue) -> ContextValue {
-    match value {
-        StructuredValue::Null => ContextValue::Null,
-        StructuredValue::Bool(value) => ContextValue::Bool(value),
-        StructuredValue::Integer(value) => ContextValue::Integer(value),
-        StructuredValue::Decimal(value) => ContextValue::Decimal(value),
-        StructuredValue::Text(value) => ContextValue::Text(value),
-        StructuredValue::Binary(value) => ContextValue::Binary(value),
-    }
 }
