@@ -1,2 +1,2 @@
-# xmip-promote
+# xmip-core-promote
 Promotes known and Path-resolved values into Message Context.
