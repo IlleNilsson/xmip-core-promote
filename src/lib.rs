@@ -1,8 +1,8 @@
 #![forbid(unsafe_code)]
 
 use context::{ContextValue, MessageContext};
+use contract::{ContractError, StructureReader};
 use path::{Path, PathEngine};
-use sdk::contract::{ContractError, StructureReader};
 
 // Not Eq. ContextValue carries Decimal(f64), and f64 has no total equality.
 #[derive(Clone, Debug, PartialEq)]
@@ -49,8 +49,8 @@ pub fn apply_path(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use contract::{ContractDescriptor, ContractId, StructureWriter, StructuredValue};
     use path::PathCost;
-    use sdk::contract::{ContractDescriptor, ContractId, StructureWriter, StructuredValue};
 
     /// A reader over one field, and an engine that reads by field name.
     struct OneField(ContractDescriptor);
