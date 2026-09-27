@@ -1,8 +1,8 @@
 #![forbid(unsafe_code)]
 
 use context::{ContextValue, MessageContext};
-use contract::{ContractError, StructureReader};
-use path::{Path, PathEngine};
+use contract::ContractError;
+use path::{CompiledPath, Content, Path, PathEngine};
 
 // Not Eq. ContextValue carries Decimal(f64), and f64 has no total equality.
 #[derive(Clone, Debug, PartialEq)]
@@ -11,9 +11,32 @@ pub struct DefaultPromotion {
     pub value: ContextValue,
 }
 
+/// A promotion as configuration writes it: the Path to read and the context
+/// key the value goes under.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PathPromotion {
     pub path: Path,
+    pub context_key: String,
+}
+
+impl PathPromotion {
+    /// This promotion with its Path compiled through `engine`, once, when
+    /// configuration is read.
+    ///
+    /// # Errors
+    /// The Path's language is not loaded, or refuses its expression.
+    pub fn compile(&self, engine: &PathEngine) -> Result<CompiledPromotion, ContractError> {
+        Ok(CompiledPromotion {
+            path: engine.compile(&self.path)?,
+            context_key: self.context_key.clone(),
+        })
+    }
+}
+
+/// A promotion ready for every Message: its Path compiled.
+#[derive(Debug)]
+pub struct CompiledPromotion {
+    pub path: CompiledPath,
     pub context_key: String,
 }
 
@@ -26,17 +49,21 @@ pub fn apply_default(
     })
 }
 
+/// Promote what each compiled Path reads from `content`, parsed once for all
+/// of them; a Path that finds nothing promotes nothing.
+///
+/// # Errors
+/// A Path could not read the content.
 pub fn apply_path(
     context: MessageContext,
-    reader: &dyn StructureReader,
-    engine: &dyn PathEngine,
-    promotions: &[PathPromotion],
+    content: &Content<'_>,
+    promotions: &[CompiledPromotion],
 ) -> Result<MessageContext, ContractError> {
     let mut result = context;
 
     for promotion in promotions {
-        if let Some(value) = engine.read(reader, &promotion.path)? {
-            // A structured field and a promoted property are one type now
+        if let Some(value) = promotion.path.read(content)? {
+            // A structured field and a promoted property are one type
             // (core::ScalarValue), so a read value drops straight in — no
             // conversion, because there is nothing to convert between.
             result = result.with_value(promotion.context_key.clone(), value);
@@ -49,58 +76,35 @@ pub fn apply_path(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use contract::{ContractDescriptor, ContractId, StructureWriter, StructuredValue};
-    use path::PathCost;
+    use contract::fixture::stream;
+    use path::{CompiledExpression, PathLanguage, Rewriting};
 
-    /// A reader over one field, and an engine that reads by field name.
-    struct OneField(ContractDescriptor);
+    /// A language whose expression is a `key=` the text holds a value after.
+    struct KeyValue;
 
-    impl StructureReader for OneField {
-        fn contract(&self) -> &ContractDescriptor {
-            &self.0
-        }
+    struct Key(String);
 
-        fn read(&self, path: &str) -> Result<Option<StructuredValue>, ContractError> {
-            Ok((path == "order.id").then(|| StructuredValue::Text("A-1".to_string())))
-        }
-    }
-
-    struct ByName;
-
-    impl PathEngine for ByName {
+    impl PathLanguage for KeyValue {
         fn language(&self) -> &'static str {
-            "dot"
+            "key-value"
         }
 
-        fn read(
-            &self,
-            reader: &dyn StructureReader,
-            path: &Path,
-        ) -> Result<Option<StructuredValue>, ContractError> {
-            reader.read(&path.expression)
-        }
-
-        fn write(
-            &self,
-            _: &mut dyn StructureWriter,
-            _: &Path,
-            _: StructuredValue,
-        ) -> Result<(), ContractError> {
-            Err(ContractError {
-                message: "read-only".to_string(),
-            })
-        }
-
-        fn cost(&self, _: &Path) -> PathCost {
-            PathCost::StreamPrefix
+        fn compile(&self, expression: &str) -> Result<Box<dyn CompiledExpression>, ContractError> {
+            Ok(Box::new(Key(format!("{expression}="))))
         }
     }
 
-    fn descriptor() -> ContractDescriptor {
-        ContractDescriptor {
-            id: ContractId("order".to_string()),
-            version: "1".to_string(),
-            representation: "application/json".to_string(),
+    impl CompiledExpression for Key {
+        fn read(&self, content: &Content<'_>) -> Result<Option<ContextValue>, ContractError> {
+            Ok(content
+                .text()?
+                .split(';')
+                .find_map(|pair| pair.strip_prefix(&self.0))
+                .map(|value| ContextValue::Text(value.to_string())))
+        }
+
+        fn write(&self, _: &mut Rewriting, _: ContextValue) -> Result<(), ContractError> {
+            Err(ContractError::new("read-only"))
         }
     }
 
@@ -127,23 +131,31 @@ mod tests {
 
     #[test]
     fn a_path_promotion_reads_the_field_and_skips_what_is_not_there() {
-        let reader = OneField(descriptor());
+        let engine = PathEngine::new(vec![Box::new(KeyValue)]);
         let promotions = [
             PathPromotion {
-                path: Path::new("dot", "order.id"),
+                path: Path::new("key-value", "order"),
                 context_key: "order".to_string(),
             },
             PathPromotion {
-                path: Path::new("dot", "order.missing"),
+                path: Path::new("key-value", "missing"),
                 context_key: "missing".to_string(),
             },
-        ];
+        ]
+        .map(|promotion| promotion.compile(&engine).expect("compiles"));
+        let order = stream("order=A-1;status=open");
         let context =
-            apply_path(MessageContext::new(), &reader, &ByName, &promotions).expect("promoted");
+            apply_path(MessageContext::new(), &Content::of(&order), &promotions).expect("promoted");
         assert_eq!(
             context.get("order"),
             Some(&ContextValue::Text("A-1".to_string()))
         );
         assert_eq!(context.get("missing"), None);
+
+        let unloaded = PathPromotion {
+            path: Path::new("xpath", "/order"),
+            context_key: "order".to_string(),
+        };
+        assert!(unloaded.compile(&engine).is_err());
     }
 }
