@@ -1,14 +1,16 @@
 #![forbid(unsafe_code)]
 
-use context::{ContextValue, MessageContext};
+use context::MessageContext;
+
 use contract::ContractError;
 use path::{CompiledPath, Content, Path, PathEngine};
+use xcore::ScalarValue;
 
-// Not Eq. ContextValue carries Decimal(f64), and f64 has no total equality.
+// Not Eq. ScalarValue carries Decimal(f64), and f64 has no total equality.
 #[derive(Clone, Debug, PartialEq)]
 pub struct DefaultPromotion {
     pub key: String,
-    pub value: ContextValue,
+    pub value: ScalarValue,
 }
 
 /// A promotion as configuration writes it: the Path to read and the context
@@ -95,15 +97,15 @@ mod tests {
     }
 
     impl CompiledExpression for Key {
-        fn read(&self, content: &Content<'_>) -> Result<Option<ContextValue>, ContractError> {
+        fn read(&self, content: &Content<'_>) -> Result<Option<ScalarValue>, ContractError> {
             Ok(content
                 .text()?
                 .split(';')
                 .find_map(|pair| pair.strip_prefix(&self.0))
-                .map(|value| ContextValue::Text(value.to_string())))
+                .map(|value| ScalarValue::Text(value.to_string())))
         }
 
-        fn write(&self, _: &mut Rewriting, _: ContextValue) -> Result<(), ContractError> {
+        fn write(&self, _: &mut Rewriting, _: ScalarValue) -> Result<(), ContractError> {
             Err(ContractError::new("read-only"))
         }
     }
@@ -115,17 +117,17 @@ mod tests {
             [
                 DefaultPromotion {
                     key: "region".to_string(),
-                    value: ContextValue::Text("eu".to_string()),
+                    value: ScalarValue::Text("eu".to_string()),
                 },
                 DefaultPromotion {
                     key: "region".to_string(),
-                    value: ContextValue::Text("se".to_string()),
+                    value: ScalarValue::Text("se".to_string()),
                 },
             ],
         );
         assert_eq!(
             context.get("region"),
-            Some(&ContextValue::Text("se".to_string()))
+            Some(&ScalarValue::Text("se".to_string()))
         );
     }
 
@@ -148,7 +150,7 @@ mod tests {
             apply_path(MessageContext::new(), &Content::of(&order), &promotions).expect("promoted");
         assert_eq!(
             context.get("order"),
-            Some(&ContextValue::Text("A-1".to_string()))
+            Some(&ScalarValue::Text("A-1".to_string()))
         );
         assert_eq!(context.get("missing"), None);
 
