@@ -7,17 +7,7 @@ version = "0.1.0"
 edition = "2024"
 license = "AGPL-3.0-or-later"
 repository = "https://github.com/IlleNilsson/xmip-core-promote"
-description = "Default and Path-based promotion into Xmip Message Context."
-
-[dependencies]
-context = { package = "xmip-core-context", git = "https://github.com/IlleNilsson/xmip-core-context", branch = "main" }
-xcore = { package = "xmip-core", git = "https://github.com/IlleNilsson/xmip-core", branch = "main" }
-contract = { package = "xmip-core-contract", git = "https://github.com/IlleNilsson/xmip-core-contract", branch = "main" }
-path = { package = "xmip-core-path", git = "https://github.com/IlleNilsson/xmip-core-path", branch = "main" }
-
-[dev-dependencies]
-# The Stream fixture, for the tests only (ADR-0044).
-contract = { package = "xmip-core-contract", git = "https://github.com/IlleNilsson/xmip-core-contract", branch = "main", features = ["test-support"] }
+description = "Promotion into what a Subscription reads: implemented once, by xmip-core-route's Gathering."
 
 [profile.dev.package."*"]
 opt-level = 3
