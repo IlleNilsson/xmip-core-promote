@@ -7,7 +7,28 @@ version = "0.1.0"
 edition = "2024"
 license = "AGPL-3.0-or-later"
 repository = "https://github.com/IlleNilsson/xmip-core-promote"
-description = "Promotion into what a Subscription reads: implemented once, by xmip-core-route's Gathering."
+description = "Promotion: a value out of a Message into its context, configured once and compiled through the path engine."
+
+[features]
+# The Promotion's code and what it is built on. Without it the crate is the
+# Promote unit's declaration alone, which configure reads the standard
+# module by.
+default = ["units"]
+units = ["dep:context", "dep:path", "dep:contract"]
+
+[dependencies]
+# The unit's declaration, the stage it runs at, and the value promoted.
+node = { package = "xmip-core-node", git = "https://github.com/IlleNilsson/xmip-core-node", branch = "main" }
+xcore = { package = "xmip-core", git = "https://github.com/IlleNilsson/xmip-core", branch = "main" }
+# The context a value is promoted into, the compiled path it is read
+# through and the error a path refuses with.
+context = { package = "xmip-core-context", git = "https://github.com/IlleNilsson/xmip-core-context", branch = "main", optional = true }
+path = { package = "xmip-core-path", git = "https://github.com/IlleNilsson/xmip-core-path", branch = "main", optional = true }
+contract = { package = "xmip-core-contract", git = "https://github.com/IlleNilsson/xmip-core-contract", branch = "main", optional = true }
+
+[dev-dependencies]
+# Only the tests make a Stream to promote from.
+stream = { package = "xmip-core-stream", git = "https://github.com/IlleNilsson/xmip-core-stream", branch = "main" }
 
 [profile.dev.package."*"]
 opt-level = 3
