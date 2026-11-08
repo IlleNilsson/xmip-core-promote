@@ -95,7 +95,12 @@ mod tests {
             "whole"
         }
 
-        fn compile(&self, _: &str) -> Result<Box<dyn path::CompiledExpression>, ContractError> {
+        fn compile(
+            &self,
+            _: &str,
+            namespaces: &path::Namespaces,
+        ) -> Result<Box<dyn path::CompiledExpression>, ContractError> {
+            namespaces.unused_by(self.language())?;
             Ok(Box::new(Text))
         }
     }
