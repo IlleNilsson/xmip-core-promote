@@ -24,4 +24,4 @@ for XPath and JSONPath. Demotion, the reverse direction, is
 `xmip-core-demote`.
 
 ADR-0066, amendments 2026-10-22, governs the Promote unit;
-`architecture.xmip` carries the maturity.
+`architecture.toml` carries the maturity.
