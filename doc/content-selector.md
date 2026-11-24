@@ -4,8 +4,9 @@ Moved here from the estate root on 2026-09-12 (ADR-0020 clause 3: the document l
 
 
 Promotion and demotion cannot use Path, and this is the distinction that most
-needs stating: promotion happens against a stream that has deliberately *not*
-been materialized. XPath needs a document. The whole point of stream-first is
+needs stating: promotion happens against a stream that is realized beside it
+only as far as the selectors reach, never whole (ADR-0047, amendment
+2026-11-24). XPath needs a document. The whole point of stream-first is
 that there isn't one yet.
 
 So Xmip has its own selector language, used only for promotion and demotion:
@@ -29,7 +30,7 @@ notation and nothing else. Four segment kinds:
 | Any | `[n]` | a streaming wildcard |
 
 A selector also declares **how far into the stream it needs to reach**, which
-is what makes it evaluable without materialization:
+is what makes it evaluable without realizing the whole:
 
 | Evaluation | Means |
 | --- | --- |
