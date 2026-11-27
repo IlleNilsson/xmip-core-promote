@@ -1,8 +1,8 @@
 [package]
 name = "xmip-core-promote"
-version = "0.1.0"
-edition = "2024"
-license = "AGPL-3.0-or-later"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
 repository = "https://github.com/IlleNilsson/xmip-core-promote"
 description = "Promotion: a value out of a Message into its context, configured once and compiled through the path engine."
 
@@ -26,3 +26,5 @@ contract = { package = "xmip-core-contract", git = "https://github.com/IlleNilss
 [dev-dependencies]
 # Only the tests make a Stream to promote from.
 stream = { package = "xmip-core-stream", git = "https://github.com/IlleNilsson/xmip-core-stream", branch = "main" }
+
+[lints]
